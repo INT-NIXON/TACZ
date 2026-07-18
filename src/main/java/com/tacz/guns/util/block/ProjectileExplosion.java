@@ -2,6 +2,8 @@ package com.tacz.guns.util.block;
 
 import com.google.common.collect.Sets;
 import com.tacz.guns.config.common.AmmoConfig;
+import com.tacz.guns.entity.EntityKineticBullet;
+import com.tacz.guns.util.DamageNumberSync;
 import com.tacz.guns.util.HitboxHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -39,6 +41,8 @@ public class ProjectileExplosion extends Explosion {
     private final Entity owner;
     private final Entity exploder;
     private final ExplosionDamageCalculator damageCalculator;
+    private final long damageNumberShotId;
+    private final int headshotTargetId;
 
     public ProjectileExplosion(Level level, Entity owner, Entity exploder, @Nullable DamageSource source, @Nullable ExplosionDamageCalculator damageCalculator, double x, double y, double z, float power, float radius, boolean knockback, Explosion.BlockInteraction mode) {
         super(level, exploder, source, damageCalculator, x, y, z, radius, AmmoConfig.EXPLOSIVE_AMMO_FIRE.get(), mode);
@@ -52,6 +56,13 @@ public class ProjectileExplosion extends Explosion {
         this.exploder = exploder;
         this.damageCalculator = damageCalculator == null ? DEFAULT_CONTEXT : damageCalculator;
         this.knockback = knockback;
+        if (exploder instanceof EntityKineticBullet bullet) {
+            this.damageNumberShotId = bullet.getDamageNumberShotId();
+            this.headshotTargetId = bullet.getDamageNumberHeadshotTargetId();
+        } else {
+            this.damageNumberShotId = EntityKineticBullet.nextDamageNumberShotId();
+            this.headshotTargetId = -1;
+        }
     }
 
     @Override
@@ -177,7 +188,12 @@ public class ProjectileExplosion extends Explosion {
             }
 
             double damage = 1.0D - strength;
+            Entity damageTarget = EntityKineticBullet.MaybeMultipartEntity.of(entity).core();
+            float remainingHealthBefore = DamageNumberSync.getRemainingHealth(damageTarget);
             entity.hurt(this.getDamageSource(), (float) damage * this.power);
+            float actualDamage = Math.max(remainingHealthBefore - DamageNumberSync.getRemainingHealth(damageTarget), 0.0F);
+            DamageNumberSync.send(this.owner, damageTarget, this.damageNumberShotId, actualDamage,
+                    damageTarget != null && damageTarget.getId() == this.headshotTargetId);
 
             if (entity instanceof LivingEntity) {
                 damage = (float) ProtectionEnchantment.getExplosionKnockbackAfterDampener((LivingEntity) entity, damage);

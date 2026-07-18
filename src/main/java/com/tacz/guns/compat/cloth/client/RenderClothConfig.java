@@ -2,6 +2,7 @@ package com.tacz.guns.compat.cloth.client;
 
 import com.tacz.guns.client.renderer.crosshair.CrosshairType;
 import com.tacz.guns.compat.cloth.widget.CrosshairDropdown;
+import com.tacz.guns.config.client.DamageNumberStyle;
 import com.tacz.guns.config.client.RenderConfig;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -11,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class RenderClothConfig {
@@ -79,6 +81,25 @@ public class RenderClothConfig {
         render.addEntry(entryBuilder.startIntField(Component.translatable("config.tacz.client.render.damage_counter_reset_time"), RenderConfig.DAMAGE_COUNTER_RESET_TIME.get())
                 .setMin(10).setMax(Integer.MAX_VALUE).setDefaultValue(2000).setTooltip(Component.translatable("config.tacz.client.render.damage_counter_reset_time.desc"))
                 .setSaveConsumer(RenderConfig.DAMAGE_COUNTER_RESET_TIME::set).build());
+
+        render.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.tacz.client.render.damage_number_enable"), RenderConfig.DAMAGE_NUMBER_ENABLE.get())
+                .setDefaultValue(true).setTooltip(Component.translatable("config.tacz.client.render.damage_number_enable.desc"))
+                .setSaveConsumer(RenderConfig.DAMAGE_NUMBER_ENABLE::set).build());
+
+        render.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.tacz.client.render.gun_melee_damage_number_enable"), RenderConfig.GUN_MELEE_DAMAGE_NUMBER_ENABLE.get())
+                .setDefaultValue(true).setTooltip(Component.translatable("config.tacz.client.render.gun_melee_damage_number_enable.desc"))
+                .setSaveConsumer(RenderConfig.GUN_MELEE_DAMAGE_NUMBER_ENABLE::set).build());
+
+        render.addEntry(entryBuilder.startEnumSelector(Component.translatable("config.tacz.client.render.damage_number_style"),
+                        DamageNumberStyle.class, RenderConfig.DAMAGE_NUMBER_STYLE.get())
+                .setDefaultValue(DamageNumberStyle.FLOATING)
+                .setEnumNameProvider(value -> Component.translatable("config.tacz.client.render.damage_number_style." + value.name().toLowerCase(Locale.ROOT)))
+                .setTooltip(Component.translatable("config.tacz.client.render.damage_number_style.desc"))
+                .setSaveConsumer(RenderConfig.DAMAGE_NUMBER_STYLE::set).build());
+
+        render.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.tacz.client.render.damage_number_accumulate"), RenderConfig.DAMAGE_NUMBER_ACCUMULATE.get())
+                .setDefaultValue(false).setTooltip(Component.translatable("config.tacz.client.render.damage_number_accumulate.desc"))
+                .setSaveConsumer(RenderConfig.DAMAGE_NUMBER_ACCUMULATE::set).build());
 
         render.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.tacz.client.render.disable_movement_fov"), RenderConfig.DISABLE_MOVEMENT_ATTRIBUTE_FOV.get())
                 .setDefaultValue(true).setTooltip(Component.translatable("config.tacz.client.render.disable_movement_fov.desc"))

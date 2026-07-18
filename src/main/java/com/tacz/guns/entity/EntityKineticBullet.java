@@ -30,6 +30,7 @@ import com.tacz.guns.resource.pojo.data.gun.ExplosionData;
 import com.tacz.guns.resource.pojo.data.gun.ExtraDamage.DistanceDamagePair;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.resource.pojo.data.gun.Ignite;
+import com.tacz.guns.util.DamageNumberSync;
 import com.tacz.guns.util.BulletDamageContext;
 import com.tacz.guns.util.EntityUtil;
 import com.tacz.guns.util.ExplodeUtil;
@@ -148,6 +149,8 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
     private float armorIgnore;
     private float headShot;
     private float shotDamageMultiplier = 1f;
+    private long damageNumberShotId = nextDamageNumberShotId();
+    private int damageNumberHeadshotTargetId = -1;
 
     public EntityKineticBullet(EntityType<? extends Projectile> type, Level worldIn) {
         super(type, worldIn);
@@ -236,6 +239,26 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
         this.shotDamageMultiplier = Math.max(multiplier, 0f);
     }
 
+    @ApiStatus.Internal
+    public static long nextDamageNumberShotId() {
+        return DamageNumberSync.nextAttackId();
+    }
+
+    @ApiStatus.Internal
+    public void setDamageNumberShotId(long shotId) {
+        this.damageNumberShotId = shotId;
+    }
+
+    @ApiStatus.Internal
+    public long getDamageNumberShotId() {
+        return this.damageNumberShotId;
+    }
+
+    @ApiStatus.Internal
+    public int getDamageNumberHeadshotTargetId() {
+        return this.damageNumberHeadshotTargetId;
+    }
+
     @Override
     protected void defineSynchedData() {
     }
@@ -299,6 +322,7 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
                 if (this.explosionDelayCount > 0) {
                     this.explosionDelayCount--;
                 } else {
+                    this.damageNumberHeadshotTargetId = -1;
                     ExplodeUtil.createExplosion(this.getOwner(), this, this.explosionDamage, this.explosionRadius, this.explosionKnockback, this.explosionDestroyBlock, this.position());
                     // 爆炸直接结束不留弹孔，不处理之后的逻辑
                     this.discard();
@@ -449,6 +473,7 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
             damage *= headShotMultiplier;
         }
         // 对 LivingEntity 进行击退强度的自定义
+        float remainingHealthBefore = DamageNumberSync.getRemainingHealth(parts.core());
         if (parts.core() instanceof LivingEntity livingCore) {
             // 取消击退效果，设定自己的击退强度
             KnockBackModifier modifier = KnockBackModifier.fromLivingEntity(livingCore);
@@ -461,10 +486,13 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
             // 创建伤害
             tacAttackEntity(parts, damage, sources);
         }
+        float actualBulletDamage = Math.max(remainingHealthBefore - DamageNumberSync.getRemainingHealth(parts.core()), 0.0F);
+        DamageNumberSync.send(attacker, parts.core(), this.damageNumberShotId, actualBulletDamage, headshot);
         // 爆炸逻辑
         if (this.explosion) {
             // 取消无敌时间
             parts.core().invulnerableTime = 0;
+            this.damageNumberHeadshotTargetId = headshot ? parts.core().getId() : -1;
             ExplodeUtil.createExplosion(this.getOwner(), this, this.explosionDamage, this.explosionRadius, this.explosionKnockback, this.explosionDestroyBlock, result.getLocation());
         }
         // 只对 LivingEntity 执行击杀判定
@@ -498,6 +526,7 @@ public class EntityKineticBullet extends Projectile implements IEntityAdditional
         super.onHitBlock(result);
         // 爆炸
         if (this.explosion) {
+            this.damageNumberHeadshotTargetId = -1;
             ExplodeUtil.createExplosion(this.getOwner(), this, this.explosionDamage, this.explosionRadius, this.explosionKnockback, this.explosionDestroyBlock, hitVec);
             // 爆炸直接结束不留弹孔，不处理之后的逻辑
             this.discard();

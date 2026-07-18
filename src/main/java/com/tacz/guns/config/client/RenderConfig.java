@@ -19,6 +19,10 @@ public class RenderConfig {
     public static ForgeConfigSpec.BooleanValue DISABLE_INTERACT_HUD_TEXT;
     public static ForgeConfigSpec.BooleanValue AUTO_SELECT_GUN_SMITH_TABLE_FILTER;
     public static ForgeConfigSpec.IntValue DAMAGE_COUNTER_RESET_TIME;
+    public static ForgeConfigSpec.BooleanValue DAMAGE_NUMBER_ENABLE;
+    public static ForgeConfigSpec.BooleanValue GUN_MELEE_DAMAGE_NUMBER_ENABLE;
+    public static ForgeConfigSpec.EnumValue<DamageNumberStyle> DAMAGE_NUMBER_STYLE;
+    public static ForgeConfigSpec.BooleanValue DAMAGE_NUMBER_ACCUMULATE;
     public static ForgeConfigSpec.BooleanValue DISABLE_MOVEMENT_ATTRIBUTE_FOV;
     public static ForgeConfigSpec.BooleanValue ENABLE_TACZ_ID_IN_TOOLTIP;
     public static ForgeConfigSpec.BooleanValue BLOCK_ENTITY_TRANSLUCENT;
@@ -70,6 +74,18 @@ public class RenderConfig {
 
         builder.comment("Max time the damage counter will reset");
         DAMAGE_COUNTER_RESET_TIME = builder.defineInRange("DamageCounterResetTime", 2000, 10, Integer.MAX_VALUE);
+
+        builder.comment("Whether or not to display damage numbers for damage dealt by the local player's guns");
+        DAMAGE_NUMBER_ENABLE = builder.define("DamageNumberEnable", true);
+
+        builder.comment("Whether or not gun melee attacks are included in damage numbers");
+        GUN_MELEE_DAMAGE_NUMBER_ENABLE = builder.define("GunMeleeDamageNumberEnable", true);
+
+        builder.comment("Where gun damage numbers are displayed");
+        DAMAGE_NUMBER_STYLE = builder.defineEnum("DamageNumberStyle", DamageNumberStyle.FLOATING);
+
+        builder.comment("Whether damage numbers accumulate all damage dealt during the display period instead of showing each shot");
+        DAMAGE_NUMBER_ACCUMULATE = builder.define("DamageNumberAccumulate", false);
 
         builder.comment("Disable the fov effect from the movement speed attribute while holding a gun");
         DISABLE_MOVEMENT_ATTRIBUTE_FOV = builder.define("DisableMovementAttributeFov", true);

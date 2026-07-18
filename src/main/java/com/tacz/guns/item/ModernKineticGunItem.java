@@ -20,6 +20,7 @@ import com.tacz.guns.resource.pojo.data.attachment.EffectData;
 import com.tacz.guns.resource.pojo.data.attachment.MeleeData;
 import com.tacz.guns.resource.pojo.data.gun.*;
 import com.tacz.guns.util.AllowAttachmentTagMatcher;
+import com.tacz.guns.util.DamageNumberSync;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -452,6 +453,7 @@ public class ModernKineticGunItem extends AbstractGunItem implements GunItemData
     private void doMelee(LivingEntity user, float gunDistance, float meleeDistance, float rangeAngle, float knockback, float damage, List<EffectData> effects) {
         // 枪长 + 刺刀长 = 总长
         double distance = gunDistance + meleeDistance;
+        long damageNumberAttackId = DamageNumberSync.nextAttackId();
         float xRot = (float) Math.toRadians(-user.getXRot());
         float yRot = (float) Math.toRadians(-user.getYRot());
         // 视角向量
@@ -492,7 +494,7 @@ public class ModernKineticGunItem extends AbstractGunItem implements GunItemData
             if (degree < (rangeAngle / 2)) {
                 // 判断实体和玩家之间是否有阻隔
                 if (user.hasLineOfSight(living)) {
-                    doPerLivingHurt(user, living, knockback, realDamage.get(), effects);
+                    doPerLivingHurt(user, living, knockback, realDamage.get(), effects, damageNumberAttackId);
                 }
             }
         }
@@ -508,16 +510,20 @@ public class ModernKineticGunItem extends AbstractGunItem implements GunItemData
         }
     }
 
-    private static void doPerLivingHurt(LivingEntity user, LivingEntity target, float knockback, float damage, List<EffectData> effects) {
+    private static void doPerLivingHurt(LivingEntity user, LivingEntity target, float knockback, float damage,
+                                         List<EffectData> effects, long damageNumberAttackId) {
         if (target.equals(user)) {
             return;
         }
+        float remainingHealthBefore = DamageNumberSync.getRemainingHealth(target);
         target.knockback(knockback, (float) Math.sin(Math.toRadians(user.getYRot())), (float) -Math.cos(Math.toRadians(user.getYRot())));
         if (user instanceof Player player) {
             target.hurt(user.damageSources().playerAttack(player), damage);
         } else {
             target.hurt(user.damageSources().mobAttack(user), damage);
         }
+        float actualDamage = Math.max(remainingHealthBefore - DamageNumberSync.getRemainingHealth(target), 0.0F);
+        DamageNumberSync.sendMelee(user, target, damageNumberAttackId, actualDamage);
         // 修复近战枪械不触发神化词条/宝石的bug
         user.doEnchantDamageEffects(user, target);
 
